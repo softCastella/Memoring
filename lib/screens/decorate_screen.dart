@@ -1,7 +1,6 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as p;
 
 import '../models/app_theme_id.dart';
 import '../models/appearance_settings.dart';
@@ -14,9 +13,14 @@ import '../widgets/circular_check.dart';
 import '../widgets/themed_background.dart';
 
 class DecorateScreen extends StatefulWidget {
-  const DecorateScreen({super.key, required this.controller});
+  const DecorateScreen({
+    super.key,
+    required this.controller,
+    this.onOpenStore,
+  });
 
   final AppController controller;
+  final VoidCallback? onOpenStore;
 
   @override
   State<DecorateScreen> createState() => _DecorateScreenState();
@@ -54,9 +58,11 @@ class _DecorateScreenState extends State<DecorateScreen> {
     final textTheme = Theme.of(context).textTheme;
     final inset = MediaQuery.viewInsetsOf(context).bottom;
 
-    return ListView(
+    return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(20, 8, 20, 24 + inset),
-      children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
         Text('꾸미기', style: textTheme.headlineSmall),
         const SizedBox(height: 8),
         Text(
@@ -88,6 +94,21 @@ class _DecorateScreenState extends State<DecorateScreen> {
         const SizedBox(height: 22),
         Text('배경', style: textTheme.titleMedium),
         const SizedBox(height: 12),
+        if (widget.onOpenStore != null) ...[
+          OutlinedButton(
+            onPressed: widget.onOpenStore,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: live.text,
+              side: BorderSide(color: live.divider),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: const Text('배경 스토어'),
+          ),
+          const SizedBox(height: 8),
+        ],
         Row(
           children: [
             Expanded(
@@ -187,7 +208,8 @@ class _DecorateScreenState extends State<DecorateScreen> {
             style: textTheme.labelLarge?.copyWith(color: palette.accent),
           ),
         ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -207,7 +229,10 @@ class _DecorateScreenState extends State<DecorateScreen> {
     if (picked == null) {
       return;
     }
-    final path = await controller.persistPickedBackground(File(picked.path));
+    final path = await controller.persistPickedBackground(
+      await picked.readAsBytes(),
+      ext: p.extension(picked.name),
+    );
     _updateDraft(
       _draft.copyWith(
         personalBackgroundPath: path,
@@ -348,6 +373,7 @@ class _PreviewCard extends StatelessWidget {
                   Expanded(
                     child: ListView(
                       padding: EdgeInsets.zero,
+                      physics: const NeverScrollableScrollPhysics(),
                       children: [
                         for (var i = 0; i < PreviewSample.itemTitles.length; i++) ...[
                           AppCard(

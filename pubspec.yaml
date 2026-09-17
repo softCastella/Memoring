@@ -17,6 +17,7 @@ dependencies:
   path_provider: ^2.1.5
   image_picker: ^1.1.2
   shared_preferences: ^2.5.3
+  home_widget: ^0.8.0
 
 dev_dependencies:
   flutter_test:
@@ -25,3 +26,10 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: GowunBatang
+      fonts:
+        - asset: fonts/GowunBatang-Regular.ttf
+          weight: 400
+        - asset: fonts/GowunBatang-Bold.ttf
+          weight: 700

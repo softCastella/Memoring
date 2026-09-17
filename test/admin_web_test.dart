@@ -31,7 +31,7 @@ void main() {
     await tester.tap(find.text('새 팩'));
     await tester.pumpAndSettle();
     expect(find.text('이미지 등록'), findsOneWidget);
-    expect(find.text('판매 구분'), findsOneWidget);
+    expect(find.text('판매구분'), findsOneWidget);
     expect(find.text('공개 상태'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('변경사항 저장'),

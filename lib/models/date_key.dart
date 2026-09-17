@@ -47,4 +47,8 @@ class DateKey {
   static String longLabel(DateTime date) {
     return '${date.month}월 ${date.day}일 ${weekdaysLong[date.weekday - 1]}';
   }
+
+  static String widgetLabel(DateTime date) {
+    return '${date.month}월 ${date.day}일 (${weekdaysShort[date.weekday - 1]})';
+  }
 }

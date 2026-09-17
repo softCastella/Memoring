@@ -26,7 +26,8 @@ class WeekStrip extends StatelessWidget {
           Expanded(
             child: _DayCell(
               date: DateKey.addDays(start, i),
-              selected: DateKey.from(DateKey.addDays(start, i)) ==
+              selected:
+                  DateKey.from(DateKey.addDays(start, i)) ==
                   DateKey.from(selected),
               palette: palette,
               textTheme: textTheme,
@@ -56,32 +57,39 @@ class _DayCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final numberStyle = textTheme.titleSmall?.copyWith(
-      color: selected ? palette.onAccent : palette.text,
-      fontWeight: FontWeight.w500,
+      color: palette.text,
+      fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+      height: 1.0,
     );
     final weekdayStyle = textTheme.labelMedium?.copyWith(
-      color: selected ? palette.onAccent.withValues(alpha: 0.9) : palette.textMuted,
+      color: selected ? palette.text : palette.textMuted,
+      height: 1.0,
     );
 
     return GestureDetector(
       onTap: () => onTap(date),
+      behavior: HitTestBehavior.opaque,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
+          SizedBox(
+            height: 28,
+            child: Center(
+              child: Text('${date.day}', style: numberStyle),
+            ),
+          ),
+          Text(
+            DateKey.weekdaysShort[date.weekday - 1],
+            style: weekdayStyle,
+          ),
+          const SizedBox(height: 6),
           AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            width: 42,
-            height: 54,
-            alignment: Alignment.center,
+            width: 5,
+            height: 5,
             decoration: BoxDecoration(
-              color: selected ? palette.accent : Colors.transparent,
-              borderRadius: BorderRadius.circular(28),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('${date.day}', style: numberStyle),
-                Text(DateKey.weekdaysShort[date.weekday - 1], style: weekdayStyle),
-              ],
+              color: selected ? palette.text : Colors.transparent,
+              shape: BoxShape.circle,
             ),
           ),
         ],

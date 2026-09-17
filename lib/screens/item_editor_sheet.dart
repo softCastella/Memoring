@@ -12,6 +12,7 @@ Future<void> showItemEditor({
     required String title,
     required ItemCategory category,
     required DateTime date,
+    required bool repeatsDaily,
   })
   onSave,
   Future<void> Function()? onDelete,
@@ -47,6 +48,7 @@ class ItemEditorSheet extends StatefulWidget {
     required String title,
     required ItemCategory category,
     required DateTime date,
+    required bool repeatsDaily,
   })
   onSave;
   final Future<void> Function()? onDelete;
@@ -59,13 +61,18 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
   late final TextEditingController _title;
   late ItemCategory _category;
   late DateTime _date;
+  late bool _repeatsDaily;
   bool _saving = false;
+
+  bool get _repeats =>
+      _repeatsDaily || _category == ItemCategory.routine;
 
   @override
   void initState() {
     super.initState();
     _title = TextEditingController(text: widget.item?.title ?? '');
     _category = widget.item?.category ?? ItemCategory.todo;
+    _repeatsDaily = widget.item?.repeatsEachDay ?? false;
     _date = widget.item == null
         ? DateKey.only(widget.initialDate)
         : DateKey.parse(widget.item!.date);
@@ -124,7 +131,12 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
                     label: Text(category.label),
                     selected: _category == category,
                     showCheckmark: false,
-                    onSelected: (_) => setState(() => _category = category),
+                    onSelected: (_) => setState(() {
+                      _category = category;
+                      if (category == ItemCategory.routine) {
+                        _repeatsDaily = true;
+                      }
+                    }),
                     selectedColor: palette.accentSoft,
                     labelStyle: textTheme.labelLarge?.copyWith(
                       color: palette.text,
@@ -138,8 +150,22 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
               ],
             ),
             const SizedBox(height: 16),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text('매일 다시', style: textTheme.titleSmall),
+              subtitle: Text(
+                '자정이 지나면 같은 자리에 미완료로 다시 나타나요.',
+                style: textTheme.bodySmall,
+              ),
+              value: _repeats,
+              activeThumbColor: palette.accent,
+              onChanged: _category == ItemCategory.routine
+                  ? null
+                  : (value) => setState(() => _repeatsDaily = value),
+            ),
+            const SizedBox(height: 8),
             Text(
-              _category == ItemCategory.routine ? '시작일' : '날짜',
+              _repeats ? '시작일' : '날짜',
               style: textTheme.labelLarge,
             ),
             const SizedBox(height: 8),
@@ -153,14 +179,6 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
                 ),
               ),
             ),
-            if (_category == ItemCategory.routine)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  '매일 반복되며, 완료 여부는 날짜마다 따로 저장됩니다.',
-                  style: textTheme.bodySmall,
-                ),
-              ),
             const SizedBox(height: 8),
             FilledButton(
               onPressed: _saving ? null : _save,
@@ -209,17 +227,24 @@ class _ItemEditorSheetState extends State<ItemEditorSheet> {
       return;
     }
     setState(() => _saving = true);
-    await widget.onSave(title: title, category: _category, date: _date);
+    final pending = widget.onSave(
+      title: title,
+      category: _category,
+      date: _date,
+      repeatsDaily: _repeats,
+    );
     if (mounted) {
       Navigator.of(context).pop();
     }
+    await pending;
   }
 
   Future<void> _delete() async {
     setState(() => _saving = true);
-    await widget.onDelete?.call();
+    final pending = widget.onDelete?.call();
     if (mounted) {
       Navigator.of(context).pop();
     }
+    await pending;
   }
 }

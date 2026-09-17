@@ -1,12 +1,12 @@
-import 'dart:io';
-
 import '../models/appearance_settings.dart';
+import 'background_file_store.dart';
 import 'local_json_store.dart';
 
 class AppearanceRepository {
-  AppearanceRepository(this._store);
+  AppearanceRepository(this._store, {this.files});
 
   final LocalJsonStore _store;
+  final BackgroundFileStore? files;
 
   Future<AppearanceSettings> load() async {
     final json = await _store.readMap('appearance');
@@ -15,8 +15,8 @@ class AppearanceRepository {
     }
     final settings = AppearanceSettings.fromJson(json);
     if (settings.hasPersonalBackground) {
-      final file = File(settings.personalBackgroundPath!);
-      if (!await file.exists()) {
+      final path = settings.personalBackgroundPath!;
+      if (files != null && !files!.exists(path)) {
         return settings.copyWith(clearPersonalBackground: true);
       }
     }

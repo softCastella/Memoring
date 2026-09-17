@@ -4,6 +4,8 @@ import '../state/app_controller.dart';
 import 'decorate_screen.dart';
 import 'mood_screen.dart';
 import 'settings_screen.dart';
+import 'store/background_store_screen.dart';
+import 'store/my_backgrounds_screen.dart';
 import 'today_screen.dart';
 import '../widgets/soft_bottom_bar.dart';
 
@@ -37,12 +39,14 @@ class _HomeShellState extends State<HomeShell> {
             children: [
               TodayScreen(
                 controller: widget.controller,
-                onOpenMood: () => setState(() => _index = 1),
+                onOpenMood: _openMood,
               ),
               MoodScreen(controller: widget.controller),
               SettingsScreen(
                 controller: widget.controller,
                 onOpenDecorate: _openDecorate,
+                onOpenStore: _openStore,
+                onOpenMyBackgrounds: _openMyBackgrounds,
               ),
             ],
           ),
@@ -55,6 +59,46 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 
+  Future<void> _openMood() {
+    return Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) {
+          return Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: AppBar(
+              title: const Text('마음 기록'),
+              centerTitle: true,
+            ),
+            body: MoodScreen(
+              controller: widget.controller,
+              showTitle: false,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _openStore() {
+    return Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => BackgroundStoreScreen(
+          controller: widget.controller,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openMyBackgrounds() {
+    return Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => MyBackgroundsScreen(
+          controller: widget.controller,
+        ),
+      ),
+    );
+  }
+
   Future<void> _openDecorate() {
     return Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -62,7 +106,10 @@ class _HomeShellState extends State<HomeShell> {
           return Scaffold(
             backgroundColor: Colors.transparent,
             appBar: AppBar(title: const Text('꾸미기')),
-            body: DecorateScreen(controller: widget.controller),
+            body: DecorateScreen(
+              controller: widget.controller,
+              onOpenStore: _openStore,
+            ),
           );
         },
       ),

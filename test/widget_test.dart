@@ -6,14 +6,16 @@ import 'package:memoring/app.dart';
 import 'package:memoring/screens/decorate_screen.dart';
 import 'package:memoring/screens/item_editor_sheet.dart';
 import 'package:memoring/state/app_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   late Directory root;
   late AppController controller;
 
   setUp(() async {
+    SharedPreferences.setMockInitialValues({});
     root = await Directory.systemTemp.createTemp('memoring_widget_');
-    controller = await AppController.bootstrap(root);
+    controller = await AppController.bootstrap(namespace: root.path);
   });
 
   tearDown(() async {
@@ -114,9 +116,42 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     expect(find.text('꾸미기'), findsWidgets);
-    await tester.drag(find.byType(DecorateScreen), const Offset(0, -420));
-    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('로즈'),
+      240,
+      scrollable: find
+          .descendant(
+            of: find.byType(DecorateScreen),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
     expect(find.text('로즈'), findsOneWidget);
     expect(find.text('세이지'), findsOneWidget);
+  });
+
+  testWidgets('opens background store from settings', (tester) async {
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 2.5;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(MemoringApp(controller: controller));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('설정'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('배경 스토어'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('공개된 배경팩이 아직 없어요. 관리자에서 팩을 공개하면 여기에 나타나요.'),
+      findsOneWidget,
+    );
+
+    final pack = await controller.catalog.createPack();
+    await controller.catalog.upsertPack(
+      pack.copyWith(name: '봄날의 꽃', isPublished: true, isFree: true),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('봄날의 꽃'), findsOneWidget);
   });
 }

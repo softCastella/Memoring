@@ -46,7 +46,7 @@ class PackListScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '앱을 다시 배포하지 않고 배경팩을 준비할 수 있어요. 지금은 이 관리자 화면에만 저장됩니다.',
+                '공개로 저장한 팩은 앱 배경 스토어에 보여요.',
                 style: textTheme.bodyMedium?.copyWith(color: palette.textMuted),
               ),
               const SizedBox(height: 20),

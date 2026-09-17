@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:path_provider/path_provider.dart';
 
 import 'app.dart';
+import 'home_widget/home_widget_callback.dart';
 import 'state/app_controller.dart';
 import 'theme/app_palette.dart';
 
@@ -21,8 +21,8 @@ Future<void> main() async {
     ),
   );
 
-  final documents = await getApplicationDocumentsDirectory();
-  final controller = await AppController.bootstrap(documents);
+  final controller = await AppController.bootstrap();
+  await registerHomeWidgetCallback();
   final isDark = AppPalette.of(controller.appearance.themeId).isDark;
   SystemChrome.setSystemUIOverlayStyle(
     SystemUiOverlayStyle(

@@ -6,15 +6,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:memoring/models/app_theme_id.dart';
 import 'package:memoring/models/date_key.dart';
 import 'package:memoring/models/item_category.dart';
+import 'package:memoring/models/topic_page.dart';
 import 'package:memoring/state/app_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   late Directory root;
   late AppController controller;
 
   setUp(() async {
+    SharedPreferences.setMockInitialValues({});
     root = await Directory.systemTemp.createTemp('memoring_controller_');
-    controller = await AppController.bootstrap(root);
+    controller = await AppController.bootstrap(namespace: root.path);
   });
 
   tearDown(() async {
@@ -111,6 +114,104 @@ void main() {
     expect(controller.countForDate(tomorrow).completed, 1);
   });
 
+  test('keeps mixed todo and repeating items in the same order after midnight', () async {
+    final today = DateKey.today();
+    final tomorrow = DateKey.addDays(today, 1);
+    await controller.addItem(
+      title: '물 마시기',
+      category: ItemCategory.todo,
+      date: today,
+      repeatsDaily: true,
+    );
+    await controller.addItem(
+      title: '보고서',
+      category: ItemCategory.study,
+      date: today,
+    );
+    await controller.addItem(
+      title: '산책',
+      category: ItemCategory.routine,
+      date: today,
+    );
+
+    final ids = controller.visibleItems.map((item) => item.id).toList();
+    await controller.toggleComplete(ids[0]);
+    await controller.toggleComplete(ids[1]);
+    expect(
+      controller.visibleItems.map((item) => item.title),
+      ['물 마시기', '보고서', '산책'],
+    );
+    expect(controller.isCompleted(controller.visibleItems[0]), isTrue);
+    expect(controller.isCompleted(controller.visibleItems[1]), isTrue);
+
+    controller.setFilter(ItemCategory.routine);
+    expect(
+      controller.visibleItems.map((item) => item.title),
+      ['물 마시기', '산책'],
+    );
+
+    controller.setFilter(null);
+    controller.selectDate(tomorrow);
+    expect(
+      controller.visibleItems.map((item) => item.title),
+      ['물 마시기', '산책'],
+    );
+    expect(controller.isCompleted(controller.visibleItems[0]), isFalse);
+    expect(controller.isCompleted(controller.visibleItems[1]), isFalse);
+  });
+
+  test('keeps todo lists on their own topic pages', () async {
+    final today = DateKey.today();
+    await controller.addItem(
+      title: '물 마시기',
+      category: ItemCategory.todo,
+      date: today,
+    );
+    final study = await controller.createPage('공부');
+    await controller.addItem(
+      title: '책 읽기',
+      category: ItemCategory.study,
+      date: today,
+    );
+
+    expect(controller.selectedPageId, study.id);
+    expect(controller.visibleItems.map((item) => item.title), ['책 읽기']);
+
+    controller.selectPage(TopicPage.inboxId);
+    expect(controller.visibleItems.map((item) => item.title), ['물 마시기']);
+  });
+
+  test('reorders visible items and keeps the new order', () async {
+    final today = DateKey.today();
+    await controller.addItem(
+      title: '첫번째',
+      category: ItemCategory.todo,
+      date: today,
+    );
+    await controller.addItem(
+      title: '두번째',
+      category: ItemCategory.todo,
+      date: today,
+    );
+    await controller.addItem(
+      title: '세번째',
+      category: ItemCategory.todo,
+      date: today,
+    );
+
+    await controller.reorderVisible(0, 3);
+    expect(
+      controller.visibleItems.map((item) => item.title),
+      ['두번째', '세번째', '첫번째'],
+    );
+
+    final reloaded = await AppController.bootstrap(namespace: root.path);
+    expect(
+      reloaded.visibleItems.map((item) => item.title),
+      ['두번째', '세번째', '첫번째'],
+    );
+  });
+
   test('persists tasks, moods and theme across reload', () async {
     final today = DateKey.today();
     final item = await controller.addItem(
@@ -122,7 +223,7 @@ void main() {
     await controller.saveMood(mood: 4, note: '따뜻한 하루');
     await controller.setTheme(AppThemeId.sage);
 
-    final reloaded = await AppController.bootstrap(root);
+    final reloaded = await AppController.bootstrap(namespace: root.path);
     expect(reloaded.items.single.title, '기록 유지');
     expect(
       reloaded.isCompleted(reloaded.items.single, DateKey.from(today)),
@@ -134,10 +235,11 @@ void main() {
   });
 
   test('restores default appearance and persists copied background', () async {
-    final source = File('${root.path}/picked.png');
-    await source.writeAsBytes(_tinyPng);
-    final draftPath = await controller.persistPickedBackground(source);
-    expect(File(draftPath).existsSync(), isTrue);
+    final draftPath = await controller.persistPickedBackground(
+      _tinyPng,
+      ext: '.png',
+    );
+    expect(controller.backgroundFileStore.exists(draftPath), isTrue);
 
     await controller.applyAppearance(
       controller.appearance.copyWith(
@@ -156,11 +258,21 @@ void main() {
       controller.appearance.personalBackgroundPath,
       contains('current'),
     );
-    expect(File(controller.appearance.personalBackgroundPath!).existsSync(), isTrue);
+    expect(
+      controller.backgroundFileStore.exists(
+        controller.appearance.personalBackgroundPath!,
+      ),
+      isTrue,
+    );
 
-    final reloaded = await AppController.bootstrap(root);
+    final reloaded = await AppController.bootstrap(namespace: root.path);
     expect(reloaded.appearance.themeId, AppThemeId.night);
-    expect(File(reloaded.appearance.personalBackgroundPath!).existsSync(), isTrue);
+    expect(
+      reloaded.backgroundFileStore.exists(
+        reloaded.appearance.personalBackgroundPath!,
+      ),
+      isTrue,
+    );
 
     await reloaded.restoreDefaultAppearance();
     expect(reloaded.appearance.themeId, AppThemeId.rose);

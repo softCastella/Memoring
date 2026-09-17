@@ -41,6 +41,7 @@ ThemeData buildThemeData(AppPalette palette) {
   return ThemeData(
     useMaterial3: true,
     brightness: brightness,
+    fontFamily: 'GowunBatang',
     scaffoldBackgroundColor: Colors.transparent,
     colorScheme: ColorScheme(
       brightness: brightness,
@@ -140,29 +141,30 @@ ThemeData buildThemeData(AppPalette palette) {
 TextTheme _textTheme(AppPalette palette) {
   TextStyle base({
     required double size,
-    FontWeight weight = FontWeight.w500,
+    FontWeight weight = FontWeight.w400,
     Color? color,
-    double height = 1.35,
+    double height = 1.4,
   }) {
     return TextStyle(
+      fontFamily: 'GowunBatang',
       fontSize: size,
       fontWeight: weight,
       color: color ?? palette.text,
       height: height,
-      letterSpacing: -0.2,
+      letterSpacing: 0,
     );
   }
 
   return TextTheme(
-    displaySmall: base(size: 32, weight: FontWeight.w500, height: 1.25),
-    headlineSmall: base(size: 22, weight: FontWeight.w500),
-    titleLarge: base(size: 20, weight: FontWeight.w500),
-    titleMedium: base(size: 17, weight: FontWeight.w500),
-    titleSmall: base(size: 15, weight: FontWeight.w500),
-    bodyLarge: base(size: 16, weight: FontWeight.w400, height: 1.45),
-    bodyMedium: base(size: 15, weight: FontWeight.w400, height: 1.45),
-    bodySmall: base(size: 13, weight: FontWeight.w400, color: palette.textMuted),
-    labelLarge: base(size: 14, weight: FontWeight.w500),
-    labelMedium: base(size: 12, weight: FontWeight.w500, color: palette.textMuted),
+    displaySmall: base(size: 32, weight: FontWeight.w700, height: 1.3),
+    headlineSmall: base(size: 22, weight: FontWeight.w700),
+    titleLarge: base(size: 20, weight: FontWeight.w700),
+    titleMedium: base(size: 17, weight: FontWeight.w700),
+    titleSmall: base(size: 15, weight: FontWeight.w700),
+    bodyLarge: base(size: 16, height: 1.5),
+    bodyMedium: base(size: 15, height: 1.5),
+    bodySmall: base(size: 13, color: palette.textMuted, height: 1.45),
+    labelLarge: base(size: 14, weight: FontWeight.w700),
+    labelMedium: base(size: 12, color: palette.textMuted),
   );
 }

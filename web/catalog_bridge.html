@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Memoring catalog bridge</title>
+  </head>
+  <body>
+    <script>
+      (function () {
+        var type = 'memoring.catalog';
+        var last = '';
+        var target = 'http://localhost:8084';
+        try {
+          if (document.referrer) {
+            target = new URL(document.referrer).origin;
+          }
+        } catch (e) {}
+
+        function readPayload() {
+          for (var i = 0; i < localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if (key && key.indexOf('memoring.catalog') !== -1) {
+              var value = localStorage.getItem(key);
+              if (!value) {
+                return { packs: [] };
+              }
+              try {
+                return JSON.parse(value);
+              } catch (err) {
+                return { packs: [] };
+              }
+            }
+          }
+          return { packs: [] };
+        }
+
+        function send() {
+          var encoded = JSON.stringify({
+            type: type,
+            payload: readPayload(),
+          });
+          if (encoded === last) {
+            return;
+          }
+          last = encoded;
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage(encoded, target);
+          }
+        }
+
+        send();
+        window.addEventListener('storage', send);
+        setInterval(send, 1500);
+      })();
+    </script>
+  </body>
+</html>

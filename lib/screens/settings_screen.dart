@@ -10,10 +10,14 @@ class SettingsScreen extends StatelessWidget {
     super.key,
     required this.controller,
     required this.onOpenDecorate,
+    required this.onOpenStore,
+    required this.onOpenMyBackgrounds,
   });
 
   final AppController controller;
   final VoidCallback onOpenDecorate;
+  final VoidCallback onOpenStore;
+  final VoidCallback onOpenMyBackgrounds;
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +51,16 @@ class SettingsScreen extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         AppCard(
+          onTap: onOpenStore,
+          child: Text('배경 스토어', style: textTheme.titleSmall),
+        ),
+        const SizedBox(height: 10),
+        AppCard(
+          onTap: onOpenMyBackgrounds,
+          child: Text('내 배경', style: textTheme.titleSmall),
+        ),
+        const SizedBox(height: 10),
+        AppCard(
           child: Text(
             '할 일, 루틴, 마음 기록, 꾸미기 설정은 이 기기에만 저장됩니다. 네트워크 없이도 사용할 수 있어요.',
             style: textTheme.bodyMedium,
@@ -62,7 +76,7 @@ class SettingsScreen extends StatelessWidget {
         ),
         const SizedBox(height: 22),
         Text(
-          '배경 스토어와 홈 화면 위젯은 다음 단계에서 연결할 예정이에요.',
+          '홈 화면 위젯은 Android 홈 화면에서 추가할 수 있어요. 유료 배경은 스토어 결제와 서버 확인 후에만 열립니다.',
           style: textTheme.bodySmall,
         ),
       ],

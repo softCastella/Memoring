@@ -31,17 +31,26 @@ class CatalogStore extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    final list = decoded['packs'];
-    packs = list is List
-        ? list
-              .whereType<Map>()
-              .map(
-                (item) =>
-                    BackgroundPack.fromJson(Map<String, dynamic>.from(item)),
-              )
-              .toList()
-        : [];
+    packs = _packsFrom(decoded);
     notifyListeners();
+  }
+
+  Future<void> applyRemote(Map<String, dynamic> body) async {
+    packs = _packsFrom(body);
+    await _persist();
+  }
+
+  List<BackgroundPack> _packsFrom(Map decoded) {
+    final list = decoded['packs'];
+    if (list is! List) {
+      return [];
+    }
+    return list
+        .whereType<Map>()
+        .map(
+          (item) => BackgroundPack.fromJson(Map<String, dynamic>.from(item)),
+        )
+        .toList();
   }
 
   Future<void> _persist() async {
@@ -53,6 +62,10 @@ class CatalogStore extends ChangeNotifier {
       }),
     );
     notifyListeners();
+  }
+
+  List<BackgroundPack> get publishedPacks {
+    return packs.where((item) => item.isPublished).toList();
   }
 
   BackgroundPack? packById(String id) {

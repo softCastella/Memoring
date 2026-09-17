@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/memoring_widget_bg"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/date_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#B4A296"
+        android:textSize="11sp" />
+
+    <TextView
+        android:id="@+id/title_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/widget_today_list"
+        android:textColor="#5A463E"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/count_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="0 / 0"
+        android:textColor="#5A463E"
+        android:textSize="22sp" />
+
+    <ProgressBar
+        android:id="@+id/progress"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:layout_marginTop="12dp"
+        android:max="100"
+        android:progress="0"
+        android:progressBackgroundTint="#F0E4E1"
+        android:progressTint="#C9A4A6" />
+</LinearLayout>

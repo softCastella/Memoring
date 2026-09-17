@@ -1,8 +1,8 @@
-import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../data/background_file_store.dart';
 import '../models/appearance_settings.dart';
 import '../theme/app_palette.dart';
 
@@ -40,9 +40,14 @@ class _PhotoLayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final file = File(appearance.personalBackgroundPath!);
-    Widget image = Image.file(
-      file,
+    final bytes = BackgroundFileStore.current?.readSync(
+      appearance.personalBackgroundPath!,
+    );
+    if (bytes == null) {
+      return const SizedBox.shrink();
+    }
+    Widget image = Image.memory(
+      bytes,
       fit: BoxFit.cover,
       alignment: Alignment(appearance.offsetX, appearance.offsetY),
       width: double.infinity,

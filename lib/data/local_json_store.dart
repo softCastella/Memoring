@@ -1,25 +1,26 @@
 import 'dart:convert';
-import 'dart:io';
+
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LocalJsonStore {
-  LocalJsonStore(this.root);
+  LocalJsonStore({required this.namespace, this._preferences});
 
-  final Directory root;
+  final String namespace;
+  SharedPreferences? _preferences;
 
-  Directory get _dataDir => Directory('${root.path}/data');
+  Future<void> ensureReady() async {
+    _preferences ??= await SharedPreferences.getInstance();
+  }
 
-  File _file(String name) => File('${_dataDir.path}/$name.json');
+  String _key(String name) => 'memoring.json.$namespace.$name';
 
   Future<Map<String, dynamic>> readMap(String name) async {
-    final file = _file(name);
-    if (!await file.exists()) {
+    await ensureReady();
+    final raw = _preferences!.getString(_key(name));
+    if (raw == null || raw.trim().isEmpty) {
       return <String, dynamic>{};
     }
-    final content = await file.readAsString();
-    if (content.trim().isEmpty) {
-      return <String, dynamic>{};
-    }
-    final decoded = jsonDecode(content);
+    final decoded = jsonDecode(raw);
     if (decoded is Map<String, dynamic>) {
       return decoded;
     }
@@ -30,13 +31,7 @@ class LocalJsonStore {
   }
 
   Future<void> writeMap(String name, Map<String, dynamic> value) async {
-    await _dataDir.create(recursive: true);
-    final file = _file(name);
-    final tmp = File('${file.path}.tmp');
-    await tmp.writeAsString(const JsonEncoder.withIndent('  ').convert(value));
-    if (await file.exists()) {
-      await file.delete();
-    }
-    await tmp.rename(file.path);
+    await ensureReady();
+    await _preferences!.setString(_key(name), jsonEncode(value));
   }
 }

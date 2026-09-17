@@ -48,4 +48,23 @@ void main() {
     expect(reloaded.packs.single.imageCount, 1);
     expect(reloaded.packs.single.isPublished, isTrue);
   });
+
+  test('applyRemote replaces local packs from admin payload', () async {
+    await store.createPack();
+    await store.applyRemote({
+      'packs': [
+        {
+          'id': 'remote-1',
+          'name': '무료 하늘',
+          'description': '',
+          'category': '하늘',
+          'isFree': true,
+          'isPublished': true,
+          'images': [],
+          'updatedAt': DateTime.now().toIso8601String(),
+        },
+      ],
+    });
+    expect(store.publishedPacks.single.name, '무료 하늘');
+  });
 }

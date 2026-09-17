@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_small_name">오늘의 진행</string>
+    <string name="widget_small_description">오늘 완료한 일과 진행률을 보여 줍니다.</string>
+    <string name="widget_medium_name">오늘의 리스트</string>
+    <string name="widget_medium_description">오늘 할 일 일부와 완료 여부를 보여 줍니다.</string>
+    <string name="widget_empty">아직 약속이 없어요</string>
+    <string name="widget_today_list">오늘의 리스트</string>
+</resources>

@@ -24,23 +24,23 @@ class FilterTabs extends StatelessWidget {
             selected: selected == null,
             onTap: () => onSelected(null),
           ),
-          const SizedBox(width: 22),
-          _Tab(
-            label: ItemCategory.todo.label,
-            selected: selected == ItemCategory.todo,
-            onTap: () => onSelected(ItemCategory.todo),
-          ),
-          const SizedBox(width: 22),
+          const SizedBox(width: 28),
           _Tab(
             label: ItemCategory.study.label,
             selected: selected == ItemCategory.study,
             onTap: () => onSelected(ItemCategory.study),
           ),
-          const SizedBox(width: 22),
+          const SizedBox(width: 28),
           _Tab(
             label: ItemCategory.routine.label,
             selected: selected == ItemCategory.routine,
             onTap: () => onSelected(ItemCategory.routine),
+          ),
+          const SizedBox(width: 28),
+          _Tab(
+            label: ItemCategory.todo.label,
+            selected: selected == ItemCategory.todo,
+            onTap: () => onSelected(ItemCategory.todo),
           ),
         ],
       ),
@@ -66,12 +66,12 @@ class _Tab extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 6, top: 4),
+        padding: const EdgeInsets.only(bottom: 8, top: 4),
         child: DecoratedBox(
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: selected ? palette.accent : Colors.transparent,
+                color: selected ? palette.text : Colors.transparent,
                 width: 1.6,
               ),
             ),
@@ -79,7 +79,7 @@ class _Tab extends StatelessWidget {
           child: Text(
             label,
             style: textTheme.labelLarge?.copyWith(
-              color: selected ? palette.accent : palette.textMuted,
+              color: selected ? palette.text : palette.textMuted,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
             ),
           ),

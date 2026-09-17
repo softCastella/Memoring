@@ -8,9 +8,14 @@ import '../widgets/app_card.dart';
 import '../widgets/mood_selector.dart';
 
 class MoodScreen extends StatefulWidget {
-  const MoodScreen({super.key, required this.controller});
+  const MoodScreen({
+    super.key,
+    required this.controller,
+    this.showTitle = true,
+  });
 
   final AppController controller;
+  final bool showTitle;
 
   @override
   State<MoodScreen> createState() => _MoodScreenState();
@@ -66,16 +71,18 @@ class _MoodScreenState extends State<MoodScreen> {
         return ListView(
           padding: EdgeInsets.fromLTRB(22, 8, 22, 24 + inset),
           children: [
-            Center(
-              child: Text('마음 기록', style: textTheme.titleMedium),
-            ),
-            const SizedBox(height: 22),
+            if (widget.showTitle) ...[
+              Center(
+                child: Text('마음 기록', style: textTheme.titleMedium),
+              ),
+              const SizedBox(height: 22),
+            ],
             Center(
               child: InkWell(
                 onTap: () => _pickDate(context),
                 child: Text(
                   DateKey.longLabel(controller.selectedDate),
-                  style: textTheme.bodySmall,
+                  style: textTheme.bodySmall?.copyWith(color: palette.textMuted),
                 ),
               ),
             ),
@@ -91,7 +98,7 @@ class _MoodScreenState extends State<MoodScreen> {
                 textAlign: TextAlign.center,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
             MoodSelector(
               value: _mood,
               onChanged: (mood) => setState(() => _mood = mood),
