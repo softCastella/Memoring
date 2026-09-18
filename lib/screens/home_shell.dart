@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../state/app_controller.dart';
 import 'decorate_screen.dart';
+import 'memo_screen.dart';
 import 'mood_screen.dart';
 import 'settings_screen.dart';
 import 'store/background_store_screen.dart';
@@ -42,10 +43,12 @@ class _HomeShellState extends State<HomeShell> {
                 onOpenMood: _openMood,
               ),
               MoodScreen(controller: widget.controller),
+              MemoScreen(controller: widget.controller),
+              BackgroundStoreScreen(controller: widget.controller),
               SettingsScreen(
                 controller: widget.controller,
                 onOpenDecorate: _openDecorate,
-                onOpenStore: _openStore,
+                onOpenStore: () => setState(() => _index = 3),
                 onOpenMyBackgrounds: _openMyBackgrounds,
               ),
             ],

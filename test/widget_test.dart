@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,6 +8,7 @@ import 'package:memoring/app.dart';
 import 'package:memoring/screens/decorate_screen.dart';
 import 'package:memoring/screens/item_editor_sheet.dart';
 import 'package:memoring/state/app_controller.dart';
+import 'package:memoring/widgets/soft_bottom_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -138,13 +141,11 @@ void main() {
 
     await tester.pumpWidget(MemoringApp(controller: controller));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('설정'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('배경 스토어'));
+    await tester.tap(find.text('스토어'));
     await tester.pumpAndSettle();
     expect(
       find.text('공개된 배경팩이 아직 없어요. 관리자에서 팩을 공개하면 여기에 나타나요.'),
-      findsOneWidget,
+      findsWidgets,
     );
 
     final pack = await controller.catalog.createPack();
@@ -153,5 +154,70 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('봄날의 꽃'), findsOneWidget);
+  });
+
+  testWidgets('shows image titles in the store pack gallery', (tester) async {
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 2.5;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final png = Uint8List.fromList(
+      base64Decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      ),
+    );
+    final pack = await controller.catalog.createPack();
+    await controller.catalog.addImages(
+      packId: pack.id,
+      files: [(bytes: png, name: 'one.png', mimeType: 'image/png')],
+    );
+    final stored = controller.catalog.packById(pack.id)!;
+    await controller.catalog.upsertPack(
+      stored.copyWith(
+        name: '봄날의 꽃',
+        isPublished: true,
+        isFree: true,
+        images: [stored.images.single.copyWith(title: '첫번째 꽃')],
+      ),
+    );
+
+    await tester.pumpWidget(MemoringApp(controller: controller));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('스토어'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('봄날의 꽃'));
+    await tester.pumpAndSettle();
+    expect(find.text('첫번째 꽃'), findsWidgets);
+  });
+
+  testWidgets('adds a memo from the memo tab', (tester) async {
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 2.5;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(MemoringApp(controller: controller));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: find.byType(SoftBottomBar),
+        matching: find.text('메모'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('아직 메모가 없어요. 마음에 남는 한 줄을 적어 보세요.'), findsOneWidget);
+
+    await tester.tap(find.text('메모 추가'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, '장보기');
+    await tester.enterText(find.byType(TextField).last, '우유랑 식빵');
+    await tester.tap(find.widgetWithText(FilledButton, '저장'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('장보기'), findsOneWidget);
+    expect(find.text('우유랑 식빵'), findsOneWidget);
+    expect(controller.memos, hasLength(1));
+    expect(controller.widgetMemo?.title, '장보기');
   });
 }

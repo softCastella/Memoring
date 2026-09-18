@@ -29,6 +29,7 @@ void main() {
   test('starts empty with rose theme and no photo', () {
     expect(controller.items, isEmpty);
     expect(controller.moods, isEmpty);
+    expect(controller.memos, isEmpty);
     expect(controller.appearance.themeId, AppThemeId.rose);
     expect(controller.appearance.hasPersonalBackground, isFalse);
   });
@@ -232,6 +233,27 @@ void main() {
     expect(reloaded.moodFor(today).mood, 4);
     expect(reloaded.moodFor(today).note, '따뜻한 하루');
     expect(reloaded.appearance.themeId, AppThemeId.sage);
+  });
+
+  test('persists memos and pins one for the widget', () async {
+    final first = await controller.upsertMemo(title: '장보기', body: '우유');
+    final second = await controller.upsertMemo(title: '한 줄', body: '천천히');
+    expect(first, isNotNull);
+    expect(second, isNotNull);
+    expect(controller.widgetMemo?.title, '한 줄');
+
+    await controller.toggleMemoPinned(first!.id);
+    expect(controller.widgetMemo?.title, '장보기');
+    expect(controller.sortedMemos.first.title, '장보기');
+
+    await controller.toggleMemoPinned(second!.id);
+    expect(controller.memos.where((item) => item.pinned), hasLength(1));
+    expect(controller.widgetMemo?.title, '한 줄');
+
+    final reloaded = await AppController.bootstrap(namespace: root.path);
+    expect(reloaded.memos, hasLength(2));
+    expect(reloaded.widgetMemo?.title, '한 줄');
+    expect(reloaded.widgetMemo?.body, '천천히');
   });
 
   test('restores default appearance and persists copied background', () async {

@@ -21,7 +21,7 @@ Future<void> main() async {
     ),
   );
 
-  final controller = await AppController.bootstrap();
+  final controller = await AppController.bootstrap(syncCatalog: true);
   await registerHomeWidgetCallback();
   final isDark = AppPalette.of(controller.appearance.themeId).isDark;
   SystemChrome.setSystemUIOverlayStyle(

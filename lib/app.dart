@@ -3,34 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'catalog/catalog_bridge.dart';
 import 'config/app_config.dart';
 import 'models/appearance_settings.dart';
 import 'screens/home_shell.dart';
 import 'state/app_controller.dart';
 import 'theme/app_palette.dart';
 import 'theme/app_theme.dart';
+import 'theme/photo_contrast.dart';
+import 'widgets/launch_splash.dart';
 import 'widgets/themed_background.dart';
 
-class MemoringApp extends StatefulWidget {
+class MemoringApp extends StatelessWidget {
   const MemoringApp({super.key, required this.controller});
 
   final AppController controller;
-
-  @override
-  State<MemoringApp> createState() => _MemoringAppState();
-}
-
-class _MemoringAppState extends State<MemoringApp> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      startCatalogBridge(onCatalog: widget.controller.catalog.applyRemote);
-    });
-  }
-
-  AppController get controller => widget.controller;
 
   @override
   Widget build(BuildContext context) {
@@ -112,9 +98,12 @@ class _AppHomeState extends State<_AppHome> {
   @override
   Widget build(BuildContext context) {
     if (!_ready) {
-      return _BootScreen(error: _error, onRetry: controller.load);
+      if (_error != null) {
+        return _BootScreen(error: _error, onRetry: controller.load);
+      }
+      return const LaunchSplashView();
     }
-    return HomeShell(controller: controller);
+    return LaunchSplashOverlay(child: HomeShell(controller: controller));
   }
 }
 
@@ -155,6 +144,7 @@ class _AppearanceFrame extends StatefulWidget {
 
 class _AppearanceFrameState extends State<_AppearanceFrame> {
   late AppearanceSettings _appearance;
+  late AppPalette _palette;
 
   AppController get controller => widget.controller;
 
@@ -162,7 +152,9 @@ class _AppearanceFrameState extends State<_AppearanceFrame> {
   void initState() {
     super.initState();
     _appearance = controller.appearance;
+    _palette = PhotoContrast.paletteFor(_appearance);
     controller.addListener(_onController);
+    _loadPhotoContrast(_appearance);
   }
 
   @override
@@ -171,7 +163,7 @@ class _AppearanceFrameState extends State<_AppearanceFrame> {
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller.removeListener(_onController);
       widget.controller.addListener(_onController);
-      _appearance = widget.controller.appearance;
+      _syncAppearance(widget.controller.appearance);
     }
   }
 
@@ -183,13 +175,41 @@ class _AppearanceFrameState extends State<_AppearanceFrame> {
 
   void _onController() {
     if (!identical(controller.appearance, _appearance)) {
-      setState(() => _appearance = controller.appearance);
+      _syncAppearance(controller.appearance);
+    }
+  }
+
+  void _syncAppearance(AppearanceSettings appearance) {
+    setState(() {
+      _appearance = appearance;
+      _palette = PhotoContrast.paletteFor(appearance);
+    });
+    _loadPhotoContrast(appearance);
+  }
+
+  Future<void> _loadPhotoContrast(AppearanceSettings appearance) async {
+    final bright = await PhotoContrast.remember(
+      appearance,
+      appearancePhotoBytes(appearance),
+    );
+    if (!mounted) {
+      return;
+    }
+    final next = PhotoContrast.paletteFor(
+      controller.appearance,
+      photoIsBright: bright,
+    );
+    if (next != _palette || !identical(controller.appearance, _appearance)) {
+      setState(() {
+        _appearance = controller.appearance;
+        _palette = next;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final palette = AppPalette.of(_appearance.themeId);
+    final palette = _palette;
     return ThemeScope(
       palette: palette,
       appearance: _appearance,

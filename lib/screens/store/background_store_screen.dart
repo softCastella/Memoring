@@ -21,8 +21,27 @@ class BackgroundStoreScreen extends StatefulWidget {
 
 class _BackgroundStoreScreenState extends State<BackgroundStoreScreen> {
   String? _category;
+  bool _refreshing = false;
 
   AppController get controller => widget.controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  Future<void> _refresh() async {
+    setState(() => _refreshing = true);
+    try {
+      await controller.refreshCatalog();
+    } catch (_) {
+      // 연결 실패 문구는 catalog.lastSyncError 로 보여 준다.
+    }
+    if (mounted) {
+      setState(() => _refreshing = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +53,17 @@ class _BackgroundStoreScreenState extends State<BackgroundStoreScreen> {
       appBar: AppBar(
         title: const Text('배경 스토어'),
         actions: [
+          IconButton(
+            tooltip: '새로고침',
+            onPressed: _refreshing ? null : _refresh,
+            icon: _refreshing
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh),
+          ),
           IconButton(
             tooltip: '내 배경',
             onPressed: () {
@@ -62,6 +92,20 @@ class _BackgroundStoreScreenState extends State<BackgroundStoreScreen> {
                 style: textTheme.bodyMedium?.copyWith(color: palette.textMuted),
               ),
               const SizedBox(height: 18),
+              if (controller.appearance.hasPersonalBackground) ...[
+                OutlinedButton(
+                  onPressed: () async {
+                    await controller.restoreDefaultBackground();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('기본 배경으로 되돌렸어요.')),
+                      );
+                    }
+                  },
+                  child: const Text('기본 배경으로 되돌리기'),
+                ),
+                const SizedBox(height: 18),
+              ],
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
@@ -87,7 +131,8 @@ class _BackgroundStoreScreenState extends State<BackgroundStoreScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 48),
                   child: Text(
-                    '공개된 배경팩이 아직 없어요. 관리자에서 팩을 공개하면 여기에 나타나요.',
+                    controller.catalog.lastSyncError ??
+                        '공개된 배경팩이 아직 없어요. 관리자에서 팩을 공개하면 여기에 나타나요.',
                     style: textTheme.bodyMedium?.copyWith(
                       color: palette.textMuted,
                     ),
@@ -216,7 +261,7 @@ class _PackCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '배경 ${pack.imageCount}종',
+                          '배경 ${pack.imageCount}종 · ${pack.priceLabel}',
                           style: textTheme.bodySmall?.copyWith(
                             color: Colors.white.withValues(alpha: 0.9),
                           ),
@@ -224,7 +269,7 @@ class _PackCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (!pack.isFree)
+                  if (pack.priceLabel != '무료')
                     Positioned(
                       top: 12,
                       right: 12,
@@ -238,7 +283,7 @@ class _PackCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          '유료',
+                          pack.priceLabel,
                           style: textTheme.labelMedium?.copyWith(
                             color: palette.onAccent,
                           ),

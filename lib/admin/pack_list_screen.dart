@@ -87,7 +87,7 @@ class PackListScreen extends StatelessWidget {
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            '배경 ${pack.imageCount}종 · ${pack.category} · ${pack.isFree ? '무료' : '유료'} · ${pack.isPublished ? '공개' : '비공개'}',
+                                            '배경 ${pack.imageCount}종 · ${pack.category} · ${pack.priceLabel} · ${pack.isPublished ? '공개' : '비공개'}',
                                             style: textTheme.bodySmall,
                                           ),
                                         ],

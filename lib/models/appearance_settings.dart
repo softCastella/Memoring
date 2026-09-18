@@ -30,7 +30,8 @@ class AppearanceSettings {
   final double cardOpacity;
 
   bool get hasPersonalBackground =>
-      personalBackgroundPath != null && personalBackgroundPath!.isNotEmpty;
+      (personalBackgroundPath != null && personalBackgroundPath!.isNotEmpty) ||
+      (catalogBackgroundId != null && catalogBackgroundId!.isNotEmpty);
 
   AppearanceSettings copyWith({
     AppThemeId? themeId,

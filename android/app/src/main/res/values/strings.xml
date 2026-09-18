@@ -4,6 +4,13 @@
     <string name="widget_small_description">오늘 완료한 일과 진행률을 보여 줍니다.</string>
     <string name="widget_medium_name">오늘의 리스트</string>
     <string name="widget_medium_description">오늘 할 일 일부와 완료 여부를 보여 줍니다.</string>
+    <string name="widget_memo_name">메모</string>
+    <string name="widget_memo_description">남겨 둔 메모를 홈 화면에 보여 줍니다.</string>
+    <string name="widget_memo_empty">아직 메모가 없어요</string>
     <string name="widget_empty">아직 약속이 없어요</string>
     <string name="widget_today_list">오늘의 리스트</string>
+    <string name="widget_today_progress">오늘의 진행</string>
+    <string name="widget_daily">매일</string>
+    <string name="widget_configure_title">어느 페이지를 볼까요?</string>
+    <string name="widget_configure_hint">위젯에 보여줄 주제 페이지를 고르세요.</string>
 </resources>

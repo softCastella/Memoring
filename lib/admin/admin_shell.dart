@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../catalog/catalog_store.dart';
+import '../config/app_config.dart';
 import '../theme/app_theme.dart';
 import 'admin_auth.dart';
 import 'pack_editor_screen.dart';
@@ -136,7 +137,10 @@ class _Sidebar extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(22, 28, 20, 20),
-              child: Text('체크리스트\n관리자 센터', style: textTheme.titleMedium),
+              child: Text(
+                '${AppConfig.appName}\n관리자 센터',
+                style: textTheme.titleMedium,
+              ),
             ),
             _NavItem(
               icon: Icons.space_dashboard_outlined,

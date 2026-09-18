@@ -1,8 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="Memoring"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -53,6 +55,18 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/memoring_widget_medium_info" />
+        </receiver>
+
+        <receiver
+            android:name=".MemoringMemoWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_memo_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/memoring_widget_memo_info" />
         </receiver>
 
         <receiver

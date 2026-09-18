@@ -7,6 +7,8 @@ import '../../catalog/background_pack.dart';
 import '../../catalog/entitlement.dart';
 import '../../state/app_controller.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/image_title_banner.dart';
+import '../../widgets/price_badge.dart';
 
 class PackDetailScreen extends StatelessWidget {
   const PackDetailScreen({
@@ -60,7 +62,7 @@ class PackDetailScreen extends StatelessWidget {
               Text(pack.name, style: textTheme.headlineSmall),
               const SizedBox(height: 6),
               Text(
-                '${pack.category} · 배경 ${pack.imageCount}종 · ${pack.isFree ? '무료' : '유료'}',
+                '${pack.category} · 배경 ${pack.imageCount}종 · ${pack.priceLabel}',
                 style: textTheme.bodyMedium?.copyWith(color: palette.textMuted),
               ),
               if (pack.description.isNotEmpty) ...[
@@ -97,23 +99,25 @@ class PackDetailScreen extends StatelessWidget {
                   ],
                 ),
               const SizedBox(height: 20),
-              if (!pack.isFree)
+              if (!pack.hasFreeImages)
                 Material(
                   color: palette.highlight,
                   borderRadius: BorderRadius.circular(14),
                   child: Padding(
                     padding: const EdgeInsets.all(14),
                     child: Text(
-                      '유료 배경은 클라이언트 구매 표시만으로 열리지 않아요. 스토어 결제와 서버 확인이 연결되면 사용할 수 있습니다.',
+                      '이 팩의 배경은 유료입니다. 스토어 결제와 서버 확인이 연결되면 사용할 수 있습니다.',
                       style: textTheme.bodySmall,
                     ),
                   ),
                 )
               else
                 FilledButton(
-                  onPressed: images.isEmpty
-                      ? null
-                      : () => _downloadOrApply(context, pack, images.first),
+                  onPressed: () => _downloadOrApply(
+                    context,
+                    pack,
+                    images.firstWhere((item) => item.isFree),
+                  ),
                   style: FilledButton.styleFrom(
                     backgroundColor: palette.accent,
                     foregroundColor: palette.onAccent,
@@ -128,6 +132,33 @@ class PackDetailScreen extends StatelessWidget {
                         : '다운로드 후 적용',
                   ),
                 ),
+              if (pack.hasPaidImages && pack.hasFreeImages) ...[
+                const SizedBox(height: 10),
+                Text(
+                  '자물쇠가 있는 이미지는 유료입니다. 무료 이미지만 바로 적용할 수 있어요.',
+                  style: textTheme.bodySmall?.copyWith(color: palette.textMuted),
+                ),
+              ],
+              if (controller.appearance.hasPersonalBackground) ...[
+                const SizedBox(height: 10),
+                OutlinedButton(
+                  onPressed: () async {
+                    await controller.restoreDefaultBackground();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('기본 배경으로 되돌렸어요.')),
+                      );
+                    }
+                  },
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text('기본 배경으로 되돌리기'),
+                ),
+              ],
             ],
           ),
         );
@@ -140,7 +171,7 @@ class PackDetailScreen extends StatelessWidget {
     BackgroundPack pack,
     BackgroundAsset asset,
   ) async {
-    if (!await controller.canAccessPack(pack)) {
+    if (!await controller.canAccessPack(pack, asset: asset)) {
       if (context.mounted) {
         _showLocked(context);
       }
@@ -156,25 +187,13 @@ class PackDetailScreen extends StatelessWidget {
     BackgroundPack pack,
     BackgroundAsset asset,
   ) async {
-    if (!await controller.canAccessPack(pack)) {
+    if (!await controller.canAccessPack(pack, asset: asset)) {
       if (context.mounted) {
         _showLocked(context);
       }
       return;
     }
-    try {
-      await controller.downloadPack(pack);
-      await controller.applyCatalogBackground(pack: pack, asset: asset);
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('배경을 적용했어요.')));
-      }
-    } on PaidContentLocked {
-      if (context.mounted) {
-        _showLocked(context);
-      }
-    }
+    await _apply(context, pack, asset);
   }
 
   Future<void> _apply(
@@ -193,6 +212,12 @@ class PackDetailScreen extends StatelessWidget {
     } on PaidContentLocked {
       if (context.mounted) {
         _showLocked(context);
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('배경을 적용하지 못했어요. $error')),
+        );
       }
     }
   }
@@ -240,13 +265,25 @@ class _AssetTile extends StatelessWidget {
               Icon(Icons.image_outlined, color: palette.textMuted)
             else
               Image.memory(bytes, fit: BoxFit.cover),
-            if (!pack.isFree)
+            if (asset.displayTitle.isNotEmpty)
+              ImageTitleBanner(
+                title:
+                    '${asset.displayTitle} · ${asset.isFree ? '무료' : '유료'}',
+              ),
+            if (!asset.isFree)
               ColoredBox(
                 color: Colors.black.withValues(alpha: 0.28),
                 child: const Center(
                   child: Icon(Icons.lock_outline, color: Colors.white),
                 ),
               ),
+            Align(
+              alignment: Alignment.topLeft,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: PriceBadge(isFree: asset.isFree),
+              ),
+            ),
             if (selected)
               Align(
                 alignment: Alignment.topRight,

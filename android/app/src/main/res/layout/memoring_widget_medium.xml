@@ -60,8 +60,8 @@
 
         <ImageView
             android:id="@+id/check_0"
-            android:layout_width="18dp"
-            android:layout_height="18dp"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
             android:contentDescription="@null"
             android:src="@drawable/memoring_widget_check_off" />
 
@@ -76,10 +76,41 @@
             android:textColor="#5A463E"
             android:textSize="13sp" />
 
+        <LinearLayout
+            android:id="@+id/daily_0"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/memoring_widget_daily_badge"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingTop="3dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="3dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:contentDescription="@null"
+                android:src="@drawable/memoring_widget_daily_icon" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:text="@string/widget_daily"
+                android:textColor="#C9A4A6"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
         <TextView
             android:id="@+id/category_0"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
             android:textColor="#B4A296"
             android:textSize="11sp" />
     </LinearLayout>
@@ -94,8 +125,8 @@
 
         <ImageView
             android:id="@+id/check_1"
-            android:layout_width="18dp"
-            android:layout_height="18dp"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
             android:contentDescription="@null"
             android:src="@drawable/memoring_widget_check_off" />
 
@@ -110,10 +141,41 @@
             android:textColor="#5A463E"
             android:textSize="13sp" />
 
+        <LinearLayout
+            android:id="@+id/daily_1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/memoring_widget_daily_badge"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingTop="3dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="3dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:contentDescription="@null"
+                android:src="@drawable/memoring_widget_daily_icon" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:text="@string/widget_daily"
+                android:textColor="#C9A4A6"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
         <TextView
             android:id="@+id/category_1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
             android:textColor="#B4A296"
             android:textSize="11sp" />
     </LinearLayout>
@@ -128,8 +190,8 @@
 
         <ImageView
             android:id="@+id/check_2"
-            android:layout_width="18dp"
-            android:layout_height="18dp"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
             android:contentDescription="@null"
             android:src="@drawable/memoring_widget_check_off" />
 
@@ -144,10 +206,41 @@
             android:textColor="#5A463E"
             android:textSize="13sp" />
 
+        <LinearLayout
+            android:id="@+id/daily_2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/memoring_widget_daily_badge"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingTop="3dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="3dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:contentDescription="@null"
+                android:src="@drawable/memoring_widget_daily_icon" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:text="@string/widget_daily"
+                android:textColor="#C9A4A6"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
         <TextView
             android:id="@+id/category_2"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
             android:textColor="#B4A296"
             android:textSize="11sp" />
     </LinearLayout>
@@ -162,8 +255,8 @@
 
         <ImageView
             android:id="@+id/check_3"
-            android:layout_width="18dp"
-            android:layout_height="18dp"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
             android:contentDescription="@null"
             android:src="@drawable/memoring_widget_check_off" />
 
@@ -178,10 +271,41 @@
             android:textColor="#5A463E"
             android:textSize="13sp" />
 
+        <LinearLayout
+            android:id="@+id/daily_3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:background="@drawable/memoring_widget_daily_badge"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingTop="3dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="3dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:contentDescription="@null"
+                android:src="@drawable/memoring_widget_daily_icon" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:text="@string/widget_daily"
+                android:textColor="#C9A4A6"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
         <TextView
             android:id="@+id/category_3"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
             android:textColor="#B4A296"
             android:textSize="11sp" />
     </LinearLayout>

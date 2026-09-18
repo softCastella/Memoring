@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../catalog/catalog_store.dart';
+import '../config/app_config.dart';
 import '../models/appearance_settings.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_theme.dart';
@@ -25,7 +26,7 @@ class AdminApp extends StatelessWidget {
       appearance: AppearanceSettings.defaults(),
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: '체크리스트 관리자 센터',
+        title: '${AppConfig.appName} 관리자 센터',
         theme: buildThemeData(palette),
         home: AdminHost(auth: auth, catalog: catalog),
       ),

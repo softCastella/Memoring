@@ -4,11 +4,13 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import '../../catalog/background_pack.dart';
-import '../../data/background_file_store.dart';
 import '../../preview/sample_data.dart';
 import '../../state/app_controller.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/circular_check.dart';
+import '../../widgets/image_title_banner.dart';
+import '../../widgets/price_badge.dart';
+import '../../widgets/themed_background.dart';
 import 'pack_detail_screen.dart';
 
 class MyBackgroundsScreen extends StatelessWidget {
@@ -107,7 +109,9 @@ class _AppliedTab extends StatelessWidget {
           Text(pack.name, style: textTheme.titleLarge),
           const SizedBox(height: 4),
           Text(
-            '배경 ${pack.imageCount}종',
+            asset.displayTitle.isNotEmpty
+                ? '${asset.displayTitle} · 배경 ${pack.imageCount}종'
+                : '배경 ${pack.imageCount}종',
             style: textTheme.bodySmall,
           ),
           const SizedBox(height: 14),
@@ -131,14 +135,25 @@ class _AppliedTab extends StatelessWidget {
         const SizedBox(height: 12),
         _ChecklistPreview(controller: controller),
         const SizedBox(height: 18),
-        if (pack != null && asset != null)
+        if (pack != null && asset != null) ...[
           FilledButton(
             onPressed: () async {
-              await controller.applyCatalogBackground(pack: pack, asset: asset!);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('배경을 적용했어요.')),
+              try {
+                await controller.applyCatalogBackground(
+                  pack: pack,
+                  asset: asset!,
                 );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('배경을 적용했어요.')),
+                  );
+                }
+              } catch (error) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('배경을 적용하지 못했어요. $error')),
+                  );
+                }
               }
             },
             style: FilledButton.styleFrom(
@@ -150,6 +165,26 @@ class _AppliedTab extends StatelessWidget {
               ),
             ),
             child: const Text('배경 적용하기'),
+          ),
+          const SizedBox(height: 10),
+        ],
+        if (controller.appearance.hasPersonalBackground)
+          OutlinedButton(
+            onPressed: () async {
+              await controller.restoreDefaultBackground();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('기본 배경으로 되돌렸어요.')),
+                );
+              }
+            },
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: const Text('기본 배경으로 되돌리기'),
           ),
       ],
     );
@@ -248,6 +283,18 @@ class _AssetGrid extends StatelessWidget {
                           color: ThemeScope.of(context).palette.highlight,
                         )
                       : Image.memory(_bytes(image)!, fit: BoxFit.cover),
+                  if (image.displayTitle.isNotEmpty)
+                    ImageTitleBanner(
+                      title:
+                          '${image.displayTitle} · ${image.isFree ? '무료' : '유료'}',
+                    ),
+                  Align(
+                    alignment: Alignment.topLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.all(6),
+                      child: PriceBadge(isFree: image.isFree, compact: true),
+                    ),
+                  ),
                   if (image.id == selectedId)
                     Align(
                       alignment: Alignment.topRight,
@@ -286,7 +333,7 @@ class _ChecklistPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = ThemeScope.of(context).palette;
     final textTheme = Theme.of(context).textTheme;
-    final path = controller.appearance.personalBackgroundPath;
+    final bytes = appearancePhotoBytes(controller.appearance);
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: SizedBox(
@@ -294,15 +341,15 @@ class _ChecklistPreview extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (path != null &&
-                BackgroundFileStore.current?.readSync(path) != null)
-              Image.memory(
-                BackgroundFileStore.current!.readSync(path)!,
-                fit: BoxFit.cover,
-              )
+            if (bytes != null)
+              Image.memory(bytes, fit: BoxFit.cover)
             else
               ColoredBox(color: palette.highlight),
             ColoredBox(color: palette.background.withValues(alpha: 0.22)),
+            if (appearanceImageTitle(controller.appearance).isNotEmpty)
+              ImageTitleBanner(
+                title: appearanceImageTitle(controller.appearance),
+              ),
             Padding(
               padding: const EdgeInsets.all(14),
               child: Material(

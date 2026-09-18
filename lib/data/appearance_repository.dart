@@ -14,11 +14,12 @@ class AppearanceRepository {
       return AppearanceSettings.defaults();
     }
     final settings = AppearanceSettings.fromJson(json);
-    if (settings.hasPersonalBackground) {
-      final path = settings.personalBackgroundPath!;
-      if (files != null && !files!.exists(path)) {
-        return settings.copyWith(clearPersonalBackground: true);
-      }
+    final path = settings.personalBackgroundPath;
+    if (path != null &&
+        path.isNotEmpty &&
+        files != null &&
+        !files!.exists(path)) {
+      return settings.copyWith(clearPersonalBackground: true);
     }
     return settings;
   }

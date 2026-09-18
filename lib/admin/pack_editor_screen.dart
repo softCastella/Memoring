@@ -7,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import '../catalog/background_pack.dart';
 import '../catalog/catalog_store.dart';
 import '../theme/app_theme.dart';
+import '../widgets/image_title_banner.dart';
+import '../widgets/price_badge.dart';
 
 class PackEditorScreen extends StatefulWidget {
   const PackEditorScreen({
@@ -29,10 +31,9 @@ class _PackEditorScreenState extends State<PackEditorScreen> {
   late TextEditingController _description;
   late TextEditingController _productId;
   late String _category;
-  late bool _isFree;
   late bool _isPublished;
   late List<BackgroundAsset> _images;
-  String? _selectedImageId;
+  final Map<String, TextEditingController> _titleControllers = {};
   bool _dirty = false;
 
   BackgroundPack? get _pack => widget.catalog.packById(widget.packId);
@@ -45,7 +46,6 @@ class _PackEditorScreenState extends State<PackEditorScreen> {
     _description = TextEditingController(text: pack?.description ?? '');
     _productId = TextEditingController(text: pack?.storeProductId ?? '');
     _category = pack?.category ?? '꽃';
-    _isFree = pack?.isFree ?? true;
     _isPublished = pack?.isPublished ?? false;
     _images = [...?pack?.images];
   }
@@ -55,6 +55,9 @@ class _PackEditorScreenState extends State<PackEditorScreen> {
     _name.dispose();
     _description.dispose();
     _productId.dispose();
+    for (final controller in _titleControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -141,41 +144,41 @@ class _PackEditorScreenState extends State<PackEditorScreen> {
           ],
         ),
         const SizedBox(height: 18),
+        Text('이미지별 설정', style: textTheme.titleMedium),
+        const SizedBox(height: 4),
+        Text(
+          '사진마다 이름과 유료/무료를 따로 정해요. 같은 팩 안에서도 섞을 수 있습니다.',
+          style: textTheme.bodySmall?.copyWith(color: palette.textMuted),
+        ),
+        const SizedBox(height: 14),
         LayoutBuilder(
           builder: (context, constraints) {
             final width = constraints.maxWidth;
             final columns = width > 1100
-                ? 4
-                : width > 800
                 ? 3
-                : 2;
-            return GridView.count(
-              crossAxisCount: columns,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 1.28,
+                : width > 800
+                ? 2
+                : 1;
+            final tileWidth =
+                (width - (12 * (columns - 1))) / columns;
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
               children: [
-                for (final image in _sortedImages) _imageTile(image),
-                _addTile(),
+                for (final image in _sortedImages)
+                  SizedBox(
+                    width: tileWidth,
+                    child: _imageEditor(image),
+                  ),
+                SizedBox(
+                  width: tileWidth,
+                  height: 268,
+                  child: _addTile(),
+                ),
               ],
             );
           },
         ),
-        if (_selectedImageId != null) ...[
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              TextButton(onPressed: _moveLeft, child: const Text('앞으로')),
-              TextButton(onPressed: _moveRight, child: const Text('뒤로')),
-              TextButton(
-                onPressed: _deleteSelected,
-                child: const Text('선택 이미지 삭제'),
-              ),
-            ],
-          ),
-        ],
         const SizedBox(height: 28),
         _FieldRow(
           label: '팩 이름',
@@ -212,46 +215,27 @@ class _PackEditorScreenState extends State<PackEditorScreen> {
           ),
         ),
         _FieldRow(
-          label: '판매구분',
+          label: '유료 상품 ID',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  _SelectOption(
-                    label: '무료',
-                    selected: _isFree,
-                    onTap: () => setState(() {
-                      _isFree = true;
-                      _dirty = true;
-                    }),
-                  ),
-                  const SizedBox(width: 22),
-                  _SelectOption(
-                    label: '유료',
-                    selected: !_isFree,
-                    onTap: () => setState(() {
-                      _isFree = false;
-                      _dirty = true;
-                    }),
-                  ),
-                ],
+              Text(
+                '유료/무료는 위 사진마다 따로 정합니다. 유료 이미지가 하나라도 있으면 이 상품 ID를 씁니다.',
+                style: textTheme.bodySmall?.copyWith(color: palette.textMuted),
               ),
-              if (!_isFree) ...[
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _productId,
-                  onChanged: (_) => setState(() => _dirty = true),
-                  decoration: const InputDecoration(
-                    hintText: '스토어 상품 ID (금액이 아닙니다)',
-                  ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _productId,
+                onChanged: (_) => setState(() => _dirty = true),
+                decoration: const InputDecoration(
+                  hintText: '스토어 상품 ID (금액이 아닙니다)',
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  '결제 금액은 앱스토어 상품 설정에서 바뀝니다. 여기에 숫자를 넣는다고 가격이 바뀌지 않습니다.',
-                  style: textTheme.bodySmall,
-                ),
-              ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '결제 금액은 앱스토어 상품 설정에서 바뀝니다. 여기에 숫자를 넣는다고 가격이 바뀌지 않습니다.',
+                style: textTheme.bodySmall,
+              ),
             ],
           ),
         ),
@@ -292,7 +276,7 @@ class _PackEditorScreenState extends State<PackEditorScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '이 팩의 구매자에게 새 배경이 제공됩니다. 별도 팩은 따로 구매 대상입니다. 실제 구매 검증은 이후 서버 연동에서 처리합니다.',
+                    '사진마다 유료/무료를 다르게 둘 수 있어요. 실제 구매 검증은 이후 서버 연동에서 처리합니다.',
                     style: textTheme.bodySmall,
                   ),
                 ),
@@ -324,54 +308,109 @@ class _PackEditorScreenState extends State<PackEditorScreen> {
     return list;
   }
 
-  Widget _imageTile(BackgroundAsset image) {
+  Widget _imageEditor(BackgroundAsset image) {
     final palette = ThemeScope.of(context).palette;
-    final selected = _selectedImageId == image.id;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedImageId = image.id),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: selected ? palette.accent : Colors.transparent,
-            width: selected ? 2 : 0,
-          ),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Image.memory(
-                Uint8List.fromList(base64Decode(image.base64Data)),
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return ColoredBox(color: palette.highlight);
-                },
-              ),
-              if (selected)
-                Align(
-                  alignment: Alignment.topRight,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        color: palette.accent,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.check,
-                        size: 14,
-                        color: palette.onAccent,
-                      ),
-                    ),
+    final textTheme = Theme.of(context).textTheme;
+    final title = _titleOf(image);
+    return Material(
+      color: palette.surface,
+      borderRadius: BorderRadius.circular(16),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('이름', style: textTheme.labelMedium),
+                const SizedBox(height: 4),
+                TextField(
+                  controller: title,
+                  decoration: const InputDecoration(
+                    hintText: '이 이미지에 보여줄 이름',
+                    isDense: true,
+                  ),
+                  onChanged: (value) => _updateImage(
+                    image.id,
+                    _currentImage(image.id).copyWith(title: value),
                   ),
                 ),
-            ],
+                const SizedBox(height: 10),
+                Text('이 이미지 판매', style: textTheme.labelMedium),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    ChoiceChip(
+                      label: const Text('무료'),
+                      selected: image.isFree,
+                      showCheckmark: false,
+                      onSelected: (_) => _setImageFree(image.id, true),
+                    ),
+                    ChoiceChip(
+                      label: const Text('유료'),
+                      selected: !image.isFree,
+                      showCheckmark: false,
+                      onSelected: (_) => _setImageFree(image.id, false),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
+          SizedBox(
+            height: 168,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.memory(
+                  Uint8List.fromList(base64Decode(image.base64Data)),
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return ColoredBox(color: palette.highlight);
+                  },
+                ),
+                if (image.displayTitle.isNotEmpty)
+                  ImageTitleBanner(
+                    title: '${image.displayTitle} · ${image.isFree ? '무료' : '유료'}',
+                  ),
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: PriceBadge(isFree: image.isFree),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: () => _shiftImage(image.id, -1),
+                      child: const Text('앞으로'),
+                    ),
+                    TextButton(
+                      onPressed: () => _shiftImage(image.id, 1),
+                      child: const Text('뒤로'),
+                    ),
+                    TextButton(
+                      onPressed: () => _deleteImage(image.id),
+                      child: const Text('삭제'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -423,17 +462,43 @@ class _PackEditorScreenState extends State<PackEditorScreen> {
     });
   }
 
-  void _moveLeft() {
-    _shiftSelected(-1);
+  TextEditingController _titleOf(BackgroundAsset image) {
+    return _titleControllers.putIfAbsent(
+      image.id,
+      () => TextEditingController(
+        text: image.title.isNotEmpty ? image.title : image.displayTitle,
+      ),
+    );
   }
 
-  void _moveRight() {
-    _shiftSelected(1);
+  void _updateImage(String id, BackgroundAsset next) {
+    setState(() {
+      _images = [
+        for (final item in _images)
+          if (item.id == id) next else item,
+      ];
+      _dirty = true;
+    });
   }
 
-  void _shiftSelected(int delta) {
+  BackgroundAsset _currentImage(String id) {
+    return _images.firstWhere((item) => item.id == id);
+  }
+
+  void _setImageFree(String id, bool isFree) {
+    final current = _currentImage(id);
+    _updateImage(
+      id,
+      current.copyWith(
+        title: _titleControllers[id]?.text ?? current.title,
+        isFree: isFree,
+      ),
+    );
+  }
+
+  void _shiftImage(String id, int delta) {
     final list = _sortedImages;
-    final index = list.indexWhere((item) => item.id == _selectedImageId);
+    final index = list.indexWhere((item) => item.id == id);
     final nextIndex = index + delta;
     if (index < 0 || nextIndex < 0 || nextIndex >= list.length) {
       return;
@@ -454,10 +519,10 @@ class _PackEditorScreenState extends State<PackEditorScreen> {
     });
   }
 
-  void _deleteSelected() {
+  void _deleteImage(String id) {
+    _titleControllers.remove(id)?.dispose();
     setState(() {
-      _images = _images.where((item) => item.id != _selectedImageId).toList();
-      _selectedImageId = null;
+      _images = _images.where((item) => item.id != id).toList();
       _dirty = true;
     });
   }
@@ -467,16 +532,22 @@ class _PackEditorScreenState extends State<PackEditorScreen> {
     if (pack == null) {
       return;
     }
+    final anyPaid = _images.any((item) => !item.isFree);
     await widget.catalog.upsertPack(
       pack.copyWith(
         name: _name.text.trim().isEmpty ? '새 배경팩' : _name.text.trim(),
         description: _description.text.trim(),
         category: _category,
-        isFree: _isFree,
+        isFree: !anyPaid,
         isPublished: _isPublished,
-        storeProductId: _isFree ? null : _productId.text.trim(),
-        clearStoreProductId: _isFree,
-        images: _images,
+        storeProductId: anyPaid ? _productId.text.trim() : null,
+        clearStoreProductId: !anyPaid,
+        images: [
+          for (final image in _images)
+            image.copyWith(
+              title: _titleControllers[image.id]?.text ?? image.title,
+            ),
+        ],
       ),
     );
     setState(() => _dirty = false);

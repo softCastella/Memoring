@@ -105,4 +105,78 @@ class AppPalette {
     highlight: Color(0xFF3A3030),
     isDark: true,
   );
+
+  /// 사진 배경이 밝으면 글자를 어둡게, 어두우면 글자를 밝게 맞춘다.
+  AppPalette contrastedForPhoto(bool? photoIsBright) {
+    if (photoIsBright == null) {
+      return this;
+    }
+    if (photoIsBright) {
+      return AppPalette(
+        id: id,
+        background: background,
+        surface: surface,
+        text: const Color(0xFF241A16),
+        textMuted: const Color(0xFF3F312B),
+        accent: accent,
+        accentSoft: accentSoft,
+        checkBorder: checkBorder,
+        onAccent: onAccent,
+        divider: divider,
+        completedText: const Color(0xFF4A3A34),
+        highlight: highlight,
+        isDark: false,
+      );
+    }
+    return AppPalette(
+      id: id,
+      background: background,
+      surface: surface,
+      text: const Color(0xFFF6EEE6),
+      textMuted: const Color(0xFFE2D2C4),
+      accent: accent,
+      accentSoft: accentSoft,
+      checkBorder: checkBorder,
+      onAccent: onAccent,
+      divider: divider,
+      completedText: const Color(0xFFD4C4B6),
+      highlight: highlight,
+      isDark: true,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AppPalette &&
+        other.id == id &&
+        other.background == background &&
+        other.surface == surface &&
+        other.text == text &&
+        other.textMuted == textMuted &&
+        other.accent == accent &&
+        other.accentSoft == accentSoft &&
+        other.checkBorder == checkBorder &&
+        other.onAccent == onAccent &&
+        other.divider == divider &&
+        other.completedText == completedText &&
+        other.highlight == highlight &&
+        other.isDark == isDark;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    background,
+    surface,
+    text,
+    textMuted,
+    accent,
+    accentSoft,
+    checkBorder,
+    onAccent,
+    divider,
+    completedText,
+    highlight,
+    isDark,
+  );
 }

@@ -21,10 +21,12 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = ThemeScope.of(context).palette;
-    final textTheme = Theme.of(context).textTheme;
-
-    return ListView(
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        final palette = ThemeScope.of(context).palette;
+        final textTheme = Theme.of(context).textTheme;
+        return ListView(
       padding: const EdgeInsets.fromLTRB(22, 8, 22, 24),
       children: [
         Text('설정', style: textTheme.displaySmall),
@@ -62,8 +64,18 @@ class SettingsScreen extends StatelessWidget {
         const SizedBox(height: 10),
         AppCard(
           child: Text(
-            '할 일, 루틴, 마음 기록, 꾸미기 설정은 이 기기에만 저장됩니다. 네트워크 없이도 사용할 수 있어요.',
+            '할 일, 루틴, 마음 기록, 메모, 꾸미기 설정은 이 기기에만 저장됩니다. 네트워크 없이도 사용할 수 있어요.',
             style: textTheme.bodyMedium,
+          ),
+        ),
+        const SizedBox(height: 10),
+        AppCard(
+          onTap: controller.appearance.hasPersonalBackground
+              ? () => controller.restoreDefaultBackground()
+              : null,
+          child: Text(
+            '기본 배경으로 되돌리기',
+            style: textTheme.titleSmall?.copyWith(color: palette.accent),
           ),
         ),
         const SizedBox(height: 10),
@@ -76,10 +88,12 @@ class SettingsScreen extends StatelessWidget {
         ),
         const SizedBox(height: 22),
         Text(
-          '홈 화면 위젯은 Android 홈 화면에서 추가할 수 있어요. 유료 배경은 스토어 결제와 서버 확인 후에만 열립니다.',
+          '홈 화면 위젯은 Android 홈 화면에서 추가할 수 있어요. 체크리스트와 메모 위젯을 따로 올릴 수 있습니다. 유료 배경은 스토어 결제와 서버 확인 후에만 열립니다.',
           style: textTheme.bodySmall,
         ),
       ],
+        );
+      },
     );
   }
 }

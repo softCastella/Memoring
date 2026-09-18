@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../catalog/catalog_store.dart';
+import '../config/app_config.dart';
 import '../theme/app_theme.dart';
 import 'admin_auth.dart';
 import 'admin_shell.dart';
@@ -112,7 +113,10 @@ class AdminLoginPage extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('체크리스트 관리자 센터', style: textTheme.headlineSmall),
+                  Text(
+                    '${AppConfig.appName} 관리자 센터',
+                    style: textTheme.headlineSmall,
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     auth.needsSetup

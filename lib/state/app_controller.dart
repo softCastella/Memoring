@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 
 import '../catalog/background_pack.dart';
+import '../catalog/catalog_client.dart';
 import '../catalog/catalog_store.dart';
 import '../catalog/entitlement.dart';
 import '../config/app_config.dart';
@@ -13,6 +14,7 @@ import '../models/appearance_settings.dart';
 import '../models/checklist_item.dart';
 import '../models/date_key.dart';
 import '../models/item_category.dart';
+import '../models/memo.dart';
 import '../models/mood_entry.dart';
 import '../models/routine_completion.dart';
 import '../models/topic_page.dart';
@@ -22,6 +24,7 @@ import '../data/appearance_repository.dart';
 import '../data/background_file_store.dart';
 import '../data/background_library.dart';
 import '../data/local_json_store.dart';
+import '../data/memo_repository.dart';
 import '../data/mood_repository.dart';
 import '../data/task_repository.dart';
 import '../data/topic_repository.dart';
@@ -31,6 +34,7 @@ class AppController extends ChangeNotifier {
   AppController({
     required this.taskRepository,
     required this.moodRepository,
+    required this.memoRepository,
     required this.appearanceRepository,
     required this.backgroundFileStore,
     required this.widgetSnapshotWriter,
@@ -43,18 +47,24 @@ class AppController extends ChangeNotifier {
     catalog.addListener(notifyListeners);
   }
 
-  static Future<AppController> bootstrap({String namespace = 'app'}) async {
+  static Future<AppController> bootstrap({
+    String namespace = 'app',
+    bool syncCatalog = false,
+  }) async {
     final store = LocalJsonStore(namespace: namespace);
     await store.ensureReady();
     final files = BackgroundFileStore(namespace: namespace);
     await files.load();
-    final catalog = CatalogStore();
+    final catalog = CatalogStore(
+      client: syncCatalog ? CatalogClient() : null,
+    );
     await catalog.load();
     final library = BackgroundLibrary(store);
     await library.load();
     final controller = AppController(
       taskRepository: TaskRepository(store),
       moodRepository: MoodRepository(store),
+      memoRepository: MemoRepository(store),
       appearanceRepository: AppearanceRepository(store, files: files),
       backgroundFileStore: files,
       widgetSnapshotWriter: WidgetSnapshotWriter(store),
@@ -68,6 +78,7 @@ class AppController extends ChangeNotifier {
 
   final TaskRepository taskRepository;
   final MoodRepository moodRepository;
+  final MemoRepository memoRepository;
   final AppearanceRepository appearanceRepository;
   final BackgroundFileStore backgroundFileStore;
   final WidgetSnapshotWriter widgetSnapshotWriter;
@@ -86,6 +97,7 @@ class AppController extends ChangeNotifier {
   String selectedPageId = TopicPage.inboxId;
   Set<RoutineCompletion> completions = {};
   Map<String, MoodEntry> moods = {};
+  List<Memo> memos = [];
   AppearanceSettings appearance = AppearanceSettings.defaults();
 
   String get selectedDateKey => DateKey.from(selectedDate);
@@ -161,6 +173,7 @@ class AppController extends ChangeNotifier {
       selectedPageId = TopicPage.inboxId;
       completions = await taskRepository.loadCompletions();
       moods = await moodRepository.loadAll();
+      memos = await memoRepository.loadAll();
       appearance = await appearanceRepository.load();
       if (AppConfig.useSampleData) {
         await _seedPreviewIfEmpty();
@@ -386,17 +399,19 @@ class AppController extends ChangeNotifier {
 
   Future<void> applyAppearance(AppearanceSettings next) async {
     var settings = next;
-    if (next.hasPersonalBackground) {
-      final bytes = await backgroundFileStore.read(next.personalBackgroundPath!);
+    final path = next.personalBackgroundPath;
+    if (path != null && path.isNotEmpty) {
+      final bytes = await backgroundFileStore.read(path);
       if (bytes != null) {
-        final path = await backgroundFileStore.persistBytes(
+        final saved = await backgroundFileStore.persistBytes(
           bytes,
           fileName: 'current',
-          ext: backgroundFileStore.extensionOf(next.personalBackgroundPath!),
+          ext: backgroundFileStore.extensionOf(path),
         );
-        settings = next.copyWith(personalBackgroundPath: path);
+        settings = next.copyWith(personalBackgroundPath: saved);
       }
-    } else {
+    } else if (next.catalogBackgroundId == null ||
+        next.catalogBackgroundId!.isEmpty) {
       await backgroundFileStore.clearPersonal();
       settings = next.copyWith(
         clearPersonalBackground: true,
@@ -410,16 +425,37 @@ class AppController extends ChangeNotifier {
     await _writeWidgetSnapshot();
   }
 
-  Future<void> restoreDefaultAppearance() async {
+  Future<void> restoreDefaultBackground() async {
     await backgroundFileStore.clearPersonal();
-    appearance = AppearanceSettings.defaults();
+    appearance = appearance.copyWith(
+      clearPersonalBackground: true,
+      clearCatalogBackground: true,
+      scale: 1,
+      offsetX: 0,
+      offsetY: 0,
+      blur: 0,
+      cardOpacity: 1,
+    );
     notifyListeners();
     await library.clearApplied();
     await appearanceRepository.save(appearance);
     await _writeWidgetSnapshot();
   }
 
+  Future<void> restoreDefaultAppearance() async {
+    await restoreDefaultBackground();
+    appearance = AppearanceSettings.defaults();
+    notifyListeners();
+    await appearanceRepository.save(appearance);
+    await _writeWidgetSnapshot();
+  }
+
   List<BackgroundPack> get storePacks => catalog.publishedPacks;
+
+  Future<void> refreshCatalog() async {
+    await catalog.syncFromServer();
+    notifyListeners();
+  }
 
   List<BackgroundPack> storePacksFor(String? category) {
     final packs = storePacks;
@@ -429,8 +465,8 @@ class AppController extends ChangeNotifier {
     return packs.where((item) => item.category == category).toList();
   }
 
-  Future<bool> canAccessPack(BackgroundPack pack) {
-    return entitlements.canAccess(pack);
+  Future<bool> canAccessPack(BackgroundPack pack, {BackgroundAsset? asset}) {
+    return entitlements.canAccess(pack, asset: asset);
   }
 
   Future<void> togglePackFavorite(String packId) async {
@@ -450,13 +486,18 @@ class AppController extends ChangeNotifier {
     required BackgroundPack pack,
     required BackgroundAsset asset,
   }) async {
-    if (!await entitlements.canAccess(pack)) {
+    if (!await entitlements.canAccess(pack, asset: asset)) {
       throw const PaidContentLocked();
     }
     if (asset.base64Data.isEmpty) {
       throw StateError('이미지가 없는 배경입니다.');
     }
-    final bytes = Uint8List.fromList(base64Decode(asset.base64Data));
+    late final Uint8List bytes;
+    try {
+      bytes = Uint8List.fromList(base64Decode(asset.base64Data));
+    } on FormatException {
+      throw StateError('이미지를 열 수 없어요.');
+    }
     var ext = '.jpg';
     if (asset.mimeType.contains('png')) {
       ext = '.png';
@@ -474,8 +515,11 @@ class AppController extends ChangeNotifier {
       cardOpacity: appearance.cardOpacity < 0.88 ? appearance.cardOpacity : 0.88,
     );
     await appearanceRepository.save(appearance);
+    await library.markDownloaded(pack.id);
     await library.markApplied(packId: pack.id, assetId: asset.id);
-    await _writeWidgetSnapshot();
+    try {
+      await _writeWidgetSnapshot();
+    } catch (_) {}
     notifyListeners();
   }
 
@@ -487,10 +531,113 @@ class AppController extends ChangeNotifier {
 
   Future<void> _writeWidgetSnapshot() async {
     final today = DateKey.today();
-    final list = itemsForDate(today);
-    final counts = countForDate(today);
-    final snapshot = WidgetSnapshot(
+    final snapshots = [
+      for (final page in pages) _snapshotForPage(page, today),
+    ];
+    final inbox = snapshots.firstWhere(
+      (snapshot) => snapshot.pageId == TopicPage.inboxId,
+      orElse: () => snapshots.first,
+    );
+    await widgetSnapshotWriter.write(inbox);
+    await homeWidgetSync.publish(snapshots, memo: widgetMemo);
+  }
+
+  List<Memo> get sortedMemos {
+    final copy = [...memos];
+    copy.sort((a, b) {
+      if (a.pinned != b.pinned) {
+        return a.pinned ? -1 : 1;
+      }
+      return b.updatedAt.compareTo(a.updatedAt);
+    });
+    return copy;
+  }
+
+  Memo? get widgetMemo {
+    final pinned = memos.where((item) => item.pinned);
+    if (pinned.isNotEmpty) {
+      return pinned.first;
+    }
+    if (memos.isEmpty) {
+      return null;
+    }
+    final copy = [...memos];
+    copy.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return copy.first;
+  }
+
+  Future<Memo?> upsertMemo({
+    String? id,
+    required String title,
+    required String body,
+  }) async {
+    final now = DateTime.now();
+    final trimmedTitle = title.trim();
+    final trimmedBody = body.trim();
+    if (trimmedTitle.isEmpty && trimmedBody.isEmpty) {
+      if (id != null) {
+        await deleteMemo(id);
+      }
+      return null;
+    }
+    if (id == null) {
+      final memo = Memo(
+        id: _newId(),
+        title: trimmedTitle,
+        body: trimmedBody,
+        createdAt: now,
+        updatedAt: now,
+      );
+      memos = [...memos, memo];
+      await _persistMemos();
+      return memo;
+    }
+    memos = [
+      for (final memo in memos)
+        if (memo.id == id)
+          memo.copyWith(
+            title: trimmedTitle,
+            body: trimmedBody,
+            updatedAt: now,
+          )
+        else
+          memo,
+    ];
+    await _persistMemos();
+    return memos.firstWhere((item) => item.id == id);
+  }
+
+  Future<void> deleteMemo(String id) async {
+    memos = [for (final memo in memos) if (memo.id != id) memo];
+    await _persistMemos();
+  }
+
+  Future<void> toggleMemoPinned(String id) async {
+    final current = memos.where((item) => item.id == id);
+    if (current.isEmpty) {
+      return;
+    }
+    final pin = !current.first.pinned;
+    memos = [
+      for (final memo in memos)
+        memo.copyWith(pinned: memo.id == id ? pin : false),
+    ];
+    await _persistMemos();
+  }
+
+  Future<void> _persistMemos() async {
+    await memoRepository.saveAll(memos);
+    await _writeWidgetSnapshot();
+    notifyListeners();
+  }
+
+  WidgetSnapshot _snapshotForPage(TopicPage page, DateTime today) {
+    final list = itemsForDate(today, pageId: page.id);
+    final counts = countForDate(today, pageId: page.id);
+    return WidgetSnapshot(
       date: DateKey.from(today),
+      pageId: page.id,
+      pageName: page.name,
       completed: counts.completed,
       total: counts.total,
       items: list
@@ -504,8 +651,6 @@ class AppController extends ChangeNotifier {
           .toList(),
       appearance: appearance,
     );
-    await widgetSnapshotWriter.write(snapshot);
-    await homeWidgetSync.publish(snapshot);
   }
 
   Future<void> _seedPreviewIfEmpty() async {

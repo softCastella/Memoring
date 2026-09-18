@@ -8,8 +8,10 @@ import '../preview/sample_data.dart';
 import '../state/app_controller.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_theme.dart';
+import '../theme/photo_contrast.dart';
 import '../widgets/app_card.dart';
 import '../widgets/circular_check.dart';
+import '../widgets/image_title_banner.dart';
 import '../widgets/themed_background.dart';
 
 class DecorateScreen extends StatefulWidget {
@@ -137,7 +139,7 @@ class _DecorateScreenState extends State<DecorateScreen> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                child: const Text('사진 제거'),
+                child: const Text('기본 배경으로'),
               ),
             ),
           ],
@@ -241,17 +243,12 @@ class _DecorateScreenState extends State<DecorateScreen> {
     );
   }
 
-  void _clearImage() {
-    _updateDraft(
-      _draft.copyWith(
-        clearPersonalBackground: true,
-        scale: 1,
-        offsetX: 0,
-        offsetY: 0,
-        blur: 0,
-        cardOpacity: 1,
-      ),
-    );
+  Future<void> _clearImage() async {
+    await controller.restoreDefaultBackground();
+    setState(() {
+      _draft = controller.appearance;
+      _dirty = false;
+    });
   }
 
   Future<void> _apply() async {
@@ -341,72 +338,120 @@ class _SliderRow extends StatelessWidget {
   }
 }
 
-class _PreviewCard extends StatelessWidget {
+class _PreviewCard extends StatefulWidget {
   const _PreviewCard({required this.draft});
 
   final AppearanceSettings draft;
 
   @override
+  State<_PreviewCard> createState() => _PreviewCardState();
+}
+
+class _PreviewCardState extends State<_PreviewCard> {
+  late AppPalette _palette;
+
+  AppearanceSettings get draft => widget.draft;
+
+  @override
+  void initState() {
+    super.initState();
+    _palette = PhotoContrast.paletteFor(draft);
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant _PreviewCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.draft != draft) {
+      _palette = PhotoContrast.paletteFor(draft);
+      _load();
+    }
+  }
+
+  Future<void> _load() async {
+    final bright = await PhotoContrast.remember(
+      draft,
+      appearancePhotoBytes(draft),
+    );
+    if (!mounted) {
+      return;
+    }
+    final next = PhotoContrast.paletteFor(draft, photoIsBright: bright);
+    if (next != _palette) {
+      setState(() => _palette = next);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final palette = AppPalette.of(draft.themeId);
+    final palette = _palette;
     final textTheme = Theme.of(context).textTheme;
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
       child: SizedBox(
         height: 210,
-        child: ThemeScope(
-          palette: palette,
-          appearance: draft,
-          child: ThemedBackground(
-            palette: palette,
-            appearance: draft,
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '미리보기',
-                    style: textTheme.labelLarge?.copyWith(color: palette.textMuted),
-                  ),
-                  const SizedBox(height: 8),
-                  Expanded(
-                    child: ListView(
-                      padding: EdgeInsets.zero,
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: [
-                        for (var i = 0; i < PreviewSample.itemTitles.length; i++) ...[
-                          AppCard(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            child: Row(
-                              children: [
-                                CircularCheck(checked: i == 0, onTap: () {}),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    PreviewSample.itemTitles[i],
-                                    style: textTheme.bodyMedium?.copyWith(
-                                      color: i == 0
-                                          ? palette.completedText
-                                          : palette.text,
-                                    ),
-                                  ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            ThemeScope(
+              palette: palette,
+              appearance: draft,
+              child: ThemedBackground(
+                palette: palette,
+                appearance: draft,
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '미리보기',
+                        style: textTheme.labelLarge?.copyWith(
+                          color: palette.textMuted,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: ListView(
+                          padding: EdgeInsets.zero,
+                          physics: const NeverScrollableScrollPhysics(),
+                          children: [
+                            for (var i = 0; i < PreviewSample.itemTitles.length; i++) ...[
+                              AppCard(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
                                 ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                        ],
-                      ],
-                    ),
+                                child: Row(
+                                  children: [
+                                    CircularCheck(checked: i == 0, onTap: () {}),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        PreviewSample.itemTitles[i],
+                                        style: textTheme.bodyMedium?.copyWith(
+                                          color: i == 0
+                                              ? palette.completedText
+                                              : palette.text,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
+            if (appearanceImageTitle(draft).isNotEmpty)
+              ImageTitleBanner(title: appearanceImageTitle(draft)),
+          ],
         ),
       ),
     );

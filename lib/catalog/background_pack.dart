@@ -5,6 +5,8 @@ class BackgroundAsset {
     required this.mimeType,
     required this.base64Data,
     required this.sortIndex,
+    this.title = '',
+    this.isFree = true,
   });
 
   final String id;
@@ -12,6 +14,16 @@ class BackgroundAsset {
   final String mimeType;
   final String base64Data;
   final int sortIndex;
+  final String title;
+  final bool isFree;
+
+  String get displayTitle {
+    final named = title.trim();
+    if (named.isNotEmpty) {
+      return named;
+    }
+    return titleFromFileName(fileName);
+  }
 
   BackgroundAsset copyWith({
     String? id,
@@ -19,6 +31,8 @@ class BackgroundAsset {
     String? mimeType,
     String? base64Data,
     int? sortIndex,
+    String? title,
+    bool? isFree,
   }) {
     return BackgroundAsset(
       id: id ?? this.id,
@@ -26,6 +40,8 @@ class BackgroundAsset {
       mimeType: mimeType ?? this.mimeType,
       base64Data: base64Data ?? this.base64Data,
       sortIndex: sortIndex ?? this.sortIndex,
+      title: title ?? this.title,
+      isFree: isFree ?? this.isFree,
     );
   }
 
@@ -35,16 +51,37 @@ class BackgroundAsset {
     'mimeType': mimeType,
     'base64Data': base64Data,
     'sortIndex': sortIndex,
+    'title': title,
+    'isFree': isFree,
   };
 
-  factory BackgroundAsset.fromJson(Map<String, dynamic> json) {
+  factory BackgroundAsset.fromJson(
+    Map<String, dynamic> json, {
+    bool defaultIsFree = true,
+  }) {
+    final fileName = json['fileName'] as String? ?? 'image';
     return BackgroundAsset(
       id: json['id'] as String,
-      fileName: json['fileName'] as String? ?? 'image',
+      fileName: fileName,
       mimeType: json['mimeType'] as String? ?? 'image/jpeg',
       base64Data: json['base64Data'] as String? ?? '',
       sortIndex: json['sortIndex'] as int? ?? 0,
+      title: json.containsKey('title')
+          ? json['title'] as String? ?? ''
+          : titleFromFileName(fileName),
+      isFree: json.containsKey('isFree')
+          ? json['isFree'] as bool? ?? defaultIsFree
+          : defaultIsFree,
     );
+  }
+
+  static String titleFromFileName(String name) {
+    final base = name.replaceAll('\\', '/').split('/').last.trim();
+    final dot = base.lastIndexOf('.');
+    if (dot > 0) {
+      return base.substring(0, dot);
+    }
+    return base;
   }
 }
 
@@ -73,6 +110,25 @@ class BackgroundPack {
   final DateTime updatedAt;
 
   int get imageCount => images.length;
+
+  bool get hasPaidImages => images.any((item) => !item.isFree);
+
+  bool get hasFreeImages =>
+      images.isEmpty ? isFree : images.any((item) => item.isFree);
+
+  String get priceLabel {
+    if (images.isEmpty) {
+      return isFree ? '무료' : '유료';
+    }
+    final paid = images.where((item) => !item.isFree).length;
+    if (paid == 0) {
+      return '무료';
+    }
+    if (paid == images.length) {
+      return '유료';
+    }
+    return '일부 유료';
+  }
 
   BackgroundPack copyWith({
     String? id,
@@ -115,20 +171,23 @@ class BackgroundPack {
 
   factory BackgroundPack.fromJson(Map<String, dynamic> json) {
     final raw = json['images'];
+    final packFree = json['isFree'] as bool? ?? true;
     return BackgroundPack(
       id: json['id'] as String,
       name: json['name'] as String? ?? '',
       description: json['description'] as String? ?? '',
       category: json['category'] as String? ?? '꽃',
-      isFree: json['isFree'] as bool? ?? true,
+      isFree: packFree,
       isPublished: json['isPublished'] as bool? ?? false,
       storeProductId: json['storeProductId'] as String?,
       images: raw is List
           ? raw
                 .whereType<Map>()
                 .map(
-                  (item) =>
-                      BackgroundAsset.fromJson(Map<String, dynamic>.from(item)),
+                  (item) => BackgroundAsset.fromJson(
+                    Map<String, dynamic>.from(item),
+                    defaultIsFree: packFree,
+                  ),
                 )
                 .toList()
           : const [],

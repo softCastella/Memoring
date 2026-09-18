@@ -15,7 +15,10 @@ class PaidContentLocked implements Exception {
 class EntitlementVerifier {
   const EntitlementVerifier();
 
-  Future<bool> canAccess(BackgroundPack pack) async {
-    return pack.isFree;
+  Future<bool> canAccess(BackgroundPack pack, {BackgroundAsset? asset}) async {
+    if (asset != null) {
+      return asset.isFree;
+    }
+    return pack.hasFreeImages;
   }
 }

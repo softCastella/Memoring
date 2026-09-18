@@ -1,10 +1,59 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../catalog/catalog_store.dart';
 import '../data/background_file_store.dart';
 import '../models/appearance_settings.dart';
 import '../theme/app_palette.dart';
+
+Uint8List? appearancePhotoBytes(AppearanceSettings appearance) {
+  final path = appearance.personalBackgroundPath;
+  if (path != null && path.isNotEmpty) {
+    final cached = BackgroundFileStore.current?.readSync(path);
+    if (cached != null) {
+      return cached;
+    }
+  }
+  return _catalogBytes(appearance.catalogBackgroundId);
+}
+
+Uint8List? _catalogBytes(String? catalogBackgroundId) {
+  if (catalogBackgroundId == null || catalogBackgroundId.isEmpty) {
+    return null;
+  }
+  final slash = catalogBackgroundId.indexOf('/');
+  if (slash <= 0 || slash >= catalogBackgroundId.length - 1) {
+    return null;
+  }
+  final pack = CatalogStore.current?.packById(
+    catalogBackgroundId.substring(0, slash),
+  );
+  if (pack == null) {
+    return null;
+  }
+  final assetId = catalogBackgroundId.substring(slash + 1);
+  for (final asset in pack.images) {
+    if (asset.id != assetId || asset.base64Data.isEmpty) {
+      continue;
+    }
+    try {
+      return Uint8List.fromList(base64Decode(asset.base64Data));
+    } catch (_) {
+      return null;
+    }
+  }
+  return null;
+}
+
+String appearanceImageTitle(AppearanceSettings appearance) {
+  return CatalogStore.current
+          ?.assetByCatalogId(appearance.catalogBackgroundId)
+          ?.displayTitle ??
+      '';
+}
 
 class ThemedBackground extends StatelessWidget {
   const ThemedBackground({
@@ -40,9 +89,7 @@ class _PhotoLayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bytes = BackgroundFileStore.current?.readSync(
-      appearance.personalBackgroundPath!,
-    );
+    final bytes = appearancePhotoBytes(appearance);
     if (bytes == null) {
       return const SizedBox.shrink();
     }
@@ -52,6 +99,7 @@ class _PhotoLayer extends StatelessWidget {
       alignment: Alignment(appearance.offsetX, appearance.offsetY),
       width: double.infinity,
       height: double.infinity,
+      gaplessPlayback: true,
       errorBuilder: (context, error, stackTrace) {
         return const SizedBox.shrink();
       },

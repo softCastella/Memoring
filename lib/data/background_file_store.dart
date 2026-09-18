@@ -74,7 +74,13 @@ class BackgroundFileStore {
     final token = _token(fileName, suffix);
     final data = Uint8List.fromList(bytes);
     _cache[token] = data;
-    await _preferences!.setString(token, base64Encode(data));
+    // SharedPreferences / localStorage cannot hold real photos. Keep the
+    // decoded bytes in memory and persist only a small copy when it fits.
+    if (data.length <= _prefsMaxBytes) {
+      try {
+        await _preferences!.setString(token, base64Encode(data));
+      } catch (_) {}
+    }
     return token;
   }
 
@@ -103,4 +109,5 @@ class BackgroundFileStore {
   }
 
   static const _allowed = {'.jpg', '.jpeg', '.png', '.webp', '.heic', '.gif'};
+  static const _prefsMaxBytes = 180000;
 }
